@@ -1,5 +1,6 @@
 const express = require("express");
 const Paste = require("../models/paste");
+const { getCurrentTime } = require("../utils/timeUtils");
 
 const router = express.Router();
 
@@ -42,11 +43,8 @@ router.post("/pastes", async (req, res) => {
 });
 
 // Helper to get and validate paste
-async function getAndValidatePaste(id, testNow) {
-  const now =
-    process.env.TEST_MODE == 1
-      ? new Date(testNow ?? Date.now())
-      : new Date();
+async function getAndValidatePaste(id, req) {
+  const now = getCurrentTime(req);
 
   // First: check existence + TTL (read-only)
   const paste = await Paste.findById(id);
@@ -90,17 +88,31 @@ async function getAndValidatePaste(id, testNow) {
 // Simple HTML view
 router.get("/paste/:id", async (req, res) => {
   try {
-    const testNow = req.headers["x-test-now-ms"];
-    const paste = await getAndValidatePaste(req.params.id, testNow);
+    const paste = await getAndValidatePaste(req.params.id, req);
 
     // Simple HTML template using textarea for safe raw text display
     res.send(`
             <!DOCTYPE html>
             <html>
             <head><title>Pastebin</title></head>
-            <body style="margin: 0; background: #1a1a1a; color: #eee; height: 100vh; overflow: hidden;">
-                <textarea readonly style="width: 100%; height: 100%; background: #1a1a1a; color: #eee; border: none; padding: 2rem; box-sizing: border-box; font-family: monospace; font-size: 16px; resize: none; outline: none;">${paste.content}</textarea>
-            </body>
+            <body style="margin:0; background:#1a1a1a; color:#eee; height:100vh; display:flex; justify-content:center; align-items:center; font-family:monospace;">
+
+    <div style="width:80%; max-width:900px; height:80%; background:#111; border-radius:8px; box-shadow:0 0 20px rgba(0,0,0,0.6); display:flex; flex-direction:column;">
+
+        <!-- Heading -->
+        <div style="padding:1rem 1.5rem; border-bottom:1px solid #333; font-size:18px; font-weight:bold;">
+            Your Paste
+        </div>
+
+        <!-- Content -->
+        <textarea readonly
+            style="flex:1; width:100%; background:#111; color:#eee; border:none; padding:1.5rem; box-sizing:border-box; font-size:16px; resize:none; outline:none;">
+${paste.content}
+        </textarea>
+
+    </div>
+
+</body>
             </html>
         `);
   } catch (err) {

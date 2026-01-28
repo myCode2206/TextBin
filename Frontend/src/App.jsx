@@ -71,39 +71,39 @@ function App() {
         </div>
 
         {/* Options Bar */}
-        <div className="options-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <div className="option-group" style={{ flex: 1 }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#aaa' }}>Expiration (Seconds)</label>
+        <div className="options-bar">
+          <div className="option-group">
+            <label>Expiration (Seconds)</label>
             <input
               type="number"
               min="1"
               placeholder="In Seconds"
               value={expiration}
               onChange={(e) => setExpiration(e.target.value)}
-              style={{ width: '100%', padding: '0.6rem', background: '#2a2a2a', border: '1px solid #444', color: '#fff', borderRadius: '4px' }}
+              className="option-input"
             />
           </div>
 
-          <div className="option-group" style={{ flex: 1 }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#aaa' }}>View Limit</label>
+          <div className="option-group">
+            <label>View Limit</label>
             <input
               type="number"
               min="1"
-              placeholder="Enter Here..."
+              placeholder="Enter Limit Here..."
               value={maxViews}
               onChange={(e) => setMaxViews(e.target.value)}
-              style={{ width: '100%', padding: '0.6rem', background: '#2a2a2a', border: '1px solid #444', color: '#fff', borderRadius: '4px' }}
+              className="option-input"
             />
           </div>
         </div>
 
         {
           generatedUrl && (
-            <div className="result-container" style={{ margin: '0 0 1rem 0', padding: '1rem', background: '#2a2a2a', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="result-container">
               <input
                 readOnly
                 value={generatedUrl}
-                style={{ flex: 1, padding: '0.5rem', background: '#1a1a1a', border: '1px solid #444', color: '#fff', borderRadius: '4px' }}
+                className="result-input"
               />
               <button onClick={() => {
                 navigator.clipboard.writeText(generatedUrl)
