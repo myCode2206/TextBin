@@ -50,6 +50,7 @@ Follow these steps to get a local copy up and running.
     ```env
     MONGO_URI=mongodb://localhost:27017/pastebin
     BASE_URL=http://localhost:3000
+    TEST_MODE=0
     PORT=3000
     ```
     Start the server:
