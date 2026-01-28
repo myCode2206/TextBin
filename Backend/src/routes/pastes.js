@@ -5,76 +5,96 @@ const router = express.Router();
 
 // Quick health check for DB
 router.get("/healthz", async (req, res) => {
-    try {
-        await Paste.findOne();
-        res.json({ ok: true });
-    } catch (err) {
-        res.status(500).json({ ok: false });
-    }
+  try {
+    await Paste.findOne();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false });
+  }
 });
 
 // Create a new paste
 router.post("/pastes", async (req, res) => {
-    const { content, ttl_seconds, max_views } = req.body;
+  const { content, ttl_seconds, max_views } = req.body;
 
-    if (!content?.trim()) {
-        return res.status(400).json({ error: "Content is required" });
-    }
+  if (!content?.trim()) {
+    return res.status(400).json({ error: "Content is required" });
+  }
 
-    if (ttl_seconds < 1 || max_views < 1) {
-        return res.status(400).json({ error: "Invalid parameters" });
-    }
+  if (ttl_seconds < 1 || max_views < 1) {
+    return res.status(400).json({ error: "Invalid parameters" });
+  }
 
-    try {
-        const paste = await Paste.create({
-            content,
-            ttl_seconds: ttl_seconds || null,
-            max_views: max_views || null
-        });
+  try {
+    const paste = await Paste.create({
+      content,
+      ttl_seconds: ttl_seconds || null,
+      max_views: max_views || null
+    });
 
-        res.status(201).json({
-            id: paste._id,
-            url: `${process.env.BASE_URL || 'http://localhost:3000'}/paste/${paste._id}`
-        });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to create paste" });
-    }
+    res.status(201).json({
+      id: paste._id,
+      url: `${process.env.BASE_URL || 'http://localhost:3000'}/paste/${paste._id}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create paste" });
+  }
 });
 
 // Helper to get and validate paste
-async function getAndValidatePaste(id) {
-    const now = new Date();
-    const paste = await Paste.findById(id);
+async function getAndValidatePaste(id, testNow) {
+  const now =
+    process.env.TEST_MODE == 1
+      ? new Date(testNow ?? Date.now())
+      : new Date();
 
-    if (!paste) {
-        throw { status: 404, message: "Paste not found" };
+  // First: check existence + TTL (read-only)
+  const paste = await Paste.findById(id);
+  if (!paste) {
+    throw { status: 404, message: "Paste not found" };
+  }
+
+  // TTL check
+  if (
+    paste.ttl_seconds &&
+    now - paste.created_at > paste.ttl_seconds * 1000
+  ) {
+    throw { status: 404, message: "Paste has expired" };
+  }
+
+  // Atomic view increment + max_views check
+  const updatedPaste = await Paste.findOneAndUpdate(
+    {
+      _id: id,
+      ...(paste.max_views && {
+        current_views: { $lt: paste.max_views }
+      })
+    },
+    {
+      $inc: { current_views: 1 }
+    },
+    {
+      new: true
     }
+  );
 
-    // Check TTL
-    if (paste.ttl_seconds && (now - paste.created_at > paste.ttl_seconds * 1000)) {
-        throw { status: 404, message: "Paste has expired" };
-    }
+  if (!updatedPaste) {
+    throw { status: 404, message: "View limit reached" };
+  }
 
-    // Check Max Views
-    if (paste.max_views && paste.current_views >= paste.max_views) {
-        throw { status: 404, message: "View limit reached" };
-    }
-
-    // Increment views
-    paste.current_views += 1;
-    await paste.save();
-
-    return paste;
+  return updatedPaste;
 }
+
 
 
 // Simple HTML view
 router.get("/paste/:id", async (req, res) => {
-    try {
-        const paste = await getAndValidatePaste(req.params.id);
+  try {
+    const testNow = req.headers["x-test-now-ms"];
+    const paste = await getAndValidatePaste(req.params.id, testNow);
 
-        // Simple HTML template using textarea for safe raw text display
-        res.send(`
+    // Simple HTML template using textarea for safe raw text display
+    res.send(`
             <!DOCTYPE html>
             <html>
             <head><title>Pastebin</title></head>
@@ -83,12 +103,12 @@ router.get("/paste/:id", async (req, res) => {
             </body>
             </html>
         `);
-    } catch (err) {
-        if (err.status === 404) {
-            return res.status(404).send("404 - Not Found or Expired");
-        }
-        res.status(500).send("Server Error");
+  } catch (err) {
+    if (err.status === 404) {
+      return res.status(404).send("404 - Not Found or Expired");
     }
+    res.status(500).send("Server Error");
+  }
 });
 
 module.exports = router;
