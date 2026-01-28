@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/", pasteRoutes);
+app.use("/api", pasteRoutes);
 
 connectDB().catch(err => console.error("DB Connection Error:", err));
 
