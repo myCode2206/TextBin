@@ -3,7 +3,7 @@
     "name": "PasteBin Backend",
     "builds": [
         {
-            "src": "index.js",
+            "src": "src/server.js",
             "use": "@vercel/node"
         }
     ],
