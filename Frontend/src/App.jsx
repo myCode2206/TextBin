@@ -21,7 +21,7 @@ function App() {
         max_views: maxViews ? parseInt(maxViews) : undefined
       }
 
-      const res = await fetch('http://localhost:3000/pastes', {
+      const res = await fetch('https://textbin-backend.vercel.app/pastes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
