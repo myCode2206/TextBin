@@ -35,7 +35,7 @@ router.post("/pastes", async (req, res) => {
 
     res.status(201).json({
       id: paste._id,
-      url: `${process.env.BASE_URL || 'http://localhost:3000'}/paste/${paste._id}`
+      url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/paste/${paste._id}`
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to create paste" });
